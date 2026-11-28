@@ -71,7 +71,8 @@ const save=()=>localStorage.setItem(K,JSON.stringify(S));
 const $=s=>document.querySelector(s);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmt=n=>(Math.round(n*100)/100).toLocaleString('en-US',{maximumFractionDigits:2});
+const fmt=n=>(Math.round((+n||0)*100)/100).toFixed(2).replace('.',',');
+const fmtq=n=>String(Math.round((+n||0)*100)/100).replace('.',',');
 const today=()=>new Date().toISOString().slice(0,10);
 const dfmt=d=>d.split('-').reverse().join('/');
 window.HIDE_TABS=[];let tab='home',view=null,draft=null,edit=null;
@@ -491,7 +492,7 @@ const idx=l=>l==='fr'?0:1;
 window.tr=function(s){const l=L();if(l==='ar'||typeof s!=='string')return s;for(const k of keys){if(s.includes(k))s=s.split(k).join(D[k][idx(l)])}return s};
 const oa=window.alert.bind(window),oc=window.confirm.bind(window);
 window.alert=m=>oa(tr(m));window.confirm=m=>oc(tr(m));
-const ow=window.words;window.words=function(n){return L()==='ar'?ow(n):fmt(Math.floor(n))};
+const ow=window.words;window.words=function(n){return L()==='ar'?ow(n):fmtq(Math.floor(n))};
 function walk(){const l=L();const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:n=>/^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
 const a=[];while(w.nextNode())a.push(w.currentNode);a.forEach(n=>{const v=tr(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v});}
 function apply(){const l=L();const h=document.documentElement;h.lang=l;h.dir=l==='ar'?'rtl':'ltr';
@@ -594,7 +595,7 @@ function alertsCard(){var A=stockAlerts();
 var h='<div class="card" style="margin-top:12px"><h2>تنبيهات المخزون</h2>';
 if(!A.length)h+='<small>لا شيء. المخزون جيد.</small>';
 h+=A.map(function(x){var d=x.left===Infinity?'—':(x.left<1?'أقل من يوم':Math.floor(x.left)+' يوم');var col=x.left<=3?'#F26B1D':x.left<=7?'#e67e00':'#555';
-return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #eee"><span><b>'+esc(x.p.name)+'</b><br><small>يباع '+(x.v?fmt(x.v)+' / يوم':'لا مبيعات')+' · الحد المقترح '+x.min+'</small></span><span style="text-align:left;white-space:nowrap"><b class="low">'+x.p.stock+'</b><br><small style="color:'+col+'">يكفي '+d+'</small></span></div>'}).join('');
+return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #eee"><span><b>'+esc(x.p.name)+'</b><br><small>يباع '+(x.v?fmtq(x.v)+' / يوم':'لا مبيعات')+' · الحد المقترح '+x.min+'</small></span><span style="text-align:left;white-space:nowrap"><b class="low">'+x.p.stock+'</b><br><small style="color:'+col+'">يكفي '+d+'</small></span></div>'}).join('');
 h+='<div class="row" style="margin-top:8px"><div><label>أيام التغطية المطلوبة</label><input type="number" value="'+cover()+'" onchange="S.cover=Math.max(1,+this.value||14);save();render()"></div></div><small>الحد الأدنى لكل منتج = سرعة البيع × أيام التغطية (آخر 28 يوماً). يمكنك تثبيته يدوياً من تعديل المنتج.</small></div>';return h}
 var stPer=7;
 function stats(){var m=salesBy(stPer),L=Object.values(m).sort(function(a,b){return b.qty-a.qty});
@@ -603,7 +604,7 @@ var none=S.products.filter(function(p){return !sold[p.id]&&p.stock>0});
 var invs=S.docs.filter(function(d){return isSale(d)&&d.date>=new Date(Date.now()-stPer*864e5).toISOString().slice(0,10)});
 var rev=L.reduce(function(a,r){return a+r.rev},0);
 var top=L.slice(0,3),weak=L.slice(3).reverse().slice(0,5);
-function rows(a){return a.map(function(r){return '<tr><td>'+esc(r.name)+'</td><td>'+fmt(r.qty)+'</td><td>'+fmt(r.rev)+'</td></tr>'}).join('')||'<tr><td colspan=3>لا شيء</td></tr>'}
+function rows(a){return a.map(function(r){return '<tr><td>'+esc(r.name)+'</td><td>'+fmtq(r.qty)+'</td><td>'+fmt(r.rev)+'</td></tr>'}).join('')||'<tr><td colspan=3>لا شيء</td></tr>'}
 return '<div class="card"><h2>إحصائيات المبيعات</h2><div class="row"><button class="btn '+(stPer===7?'':'g')+'" onclick="stPer=7;render()">آخر 7 أيام</button><button class="btn '+(stPer===30?'':'g')+'" onclick="stPer=30;render()">آخر 30 يوماً</button></div>'
 +'<div class="grid"><div class="kpi"><small>عدد الفواتير</small><div>'+invs.length+'</div></div><div class="kpi"><small>المبيعات HT</small><div>'+fmt(rev)+' د.م</div></div></div></div>'
 +'<div class="card tw"><h2>🔥 الأكثر مبيعاً</h2><table><tr><th>المنتج</th><th>الكمية</th><th>المبلغ HT</th></tr>'+rows(top)+'</table></div>'
@@ -611,7 +612,7 @@ return '<div class="card"><h2>إحصائيات المبيعات</h2><div class="
 +'<div class="card"><h2>❌ لم يُبع (وله مخزون)</h2>'+(none.length?none.map(function(p){return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee"><span>'+esc(p.name)+'</span><span>'+p.stock+' · '+fmt(p.stock*p.cost)+' د.م</span></div>'}).join(''):'<small>كل المنتجات بيعت.</small>')+'</div>'
 +'<div class="row noprint"><button class="btn k" onclick="stShare()">📤 أرسل التقرير بالواتساب</button></div>'}
 function stShare(){var m=salesBy(stPer),L=Object.values(m).sort(function(a,b){return b.qty-a.qty}),sold={};L.forEach(function(r){if(r.pid)sold[r.pid]=1});
-var t='تقرير المبيعات - آخر '+stPer+' أيام\n\nالأكثر مبيعاً:\n'+L.slice(0,5).map(function(r){return '- '+r.name+': '+fmt(r.qty)}).join('\n')+'\n\nلم يُبع:\n'+(S.products.filter(function(p){return !sold[p.id]&&p.stock>0}).map(function(p){return '- '+p.name+' ('+p.stock+')'}).join('\n')||'-')+'\n\nمخزون ينقص:\n'+(stockAlerts().slice(0,8).map(function(x){return '- '+x.p.name+': '+x.p.stock}).join('\n')||'-');
+var t='تقرير المبيعات - آخر '+stPer+' أيام\n\nالأكثر مبيعاً:\n'+L.slice(0,5).map(function(r){return '- '+r.name+': '+fmtq(r.qty)}).join('\n')+'\n\nلم يُبع:\n'+(S.products.filter(function(p){return !sold[p.id]&&p.stock>0}).map(function(p){return '- '+p.name+' ('+p.stock+')'}).join('\n')||'-')+'\n\nمخزون ينقص:\n'+(stockAlerts().slice(0,8).map(function(x){return '- '+x.p.name+': '+x.p.stock}).join('\n')||'-');
 window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
 render();
 </script>
